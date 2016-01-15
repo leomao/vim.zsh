@@ -94,6 +94,7 @@ vi-put-after() {
   REGION_ACTIVE=0
 }
 zle -N vi-put-after
+
 vi-put-before() {
   if [[ $_clipcopy == '+' ]];then
     local cbuf
@@ -108,6 +109,18 @@ vi-put-before() {
   REGION_ACTIVE=0
 }
 zle -N vi-put-before
+
+visual-mode() {
+  zle .visual-mode
+  zle zle-keymap-select
+}
+zle -N visual-mode
+
+visual-line-mode() {
+  zle .visual-line-mode
+  zle zle-keymap-select
+}
+zle -N visual-line-mode
 
 overwrite-mode() {
   zle -K virep
@@ -171,18 +184,6 @@ bindkey -N virep viins
 bindkey -M vicmd "R" overwrite-mode
 
 # visual mode
-visual-mode() {
-  zle .visual-mode
-  zle zle-keymap-select
-}
-zle -N visual-mode
-
-visual-line-mode() {
-  zle .visual-line-mode
-  zle zle-keymap-select
-}
-zle -N visual-line-mode
-
 [[ -n "${key[Delete]}" ]] && bindkey -M visual "${key[Delete]}" kill-region
 
 # replace mode
