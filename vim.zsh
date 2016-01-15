@@ -53,8 +53,6 @@ bindkey -M viins "^H" backward-delete-char
 bindkey -M viins "^U" backward-kill-line 
 bindkey -M viins "^?" backward-delete-char
 
-bindkey "^R" history-beginning-search-backward
-
 bindkey -N vivis vicmd
 bindkey -N virep viins
 
