@@ -75,9 +75,30 @@ zle -N visual-mode
 zle -N visual-line-mode
 zle -N vi-replace
 
+# normal mode
+vi-put-before(){
+  zle .vi-put-before
+  MARK=
+}
+zle -N vi-put-before
+
+vi-put-after(){
+  zle .vi-put-after
+  MARK=
+}
+zle -N vi-put-after
+
 # visual mode
-[[ -n "${key[Delete]}" ]] && bindkey -M vivis "${key[Delete]}" vi-delete
-bindkey -M vivis "x" vi-delete
+vi-visual-delete(){
+  zle .vi-delete
+  zle .vi-cmd-mode
+}
+zle -N vi-visual-delete
+[[ -n "${key[Delete]}" ]] && bindkey -M vivis "${key[Delete]}" vi-visual-delete
+bindkey -M vivis "x" vi-visual-delete
+bindkey -M vivis "d" vi-visual-delete
+bindkey -M vivis "o" exchange-point-and-mark
+bindkey -M vivis "p" put-replace-selection
 
 # replace mode
 [[ -n "${key[Insert]}" ]] && bindkey -M virep "${key[Insert]}" vi-insert
@@ -91,8 +112,8 @@ if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} )); then
   zle-keybinds-finish() {
     echoti rmkx
   }
-  hooks-add-hook zle-line-init zle-keybinds-init
-  hooks-add-hook zle-line-finish zle-keybinds-finish
+  add-zle-hook zle-line-init zle-keybinds-init
+  add-zle-hook zle-line-finish zle-keybinds-finish
 fi
 
 bindkey -v
