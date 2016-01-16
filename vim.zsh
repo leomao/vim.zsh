@@ -55,20 +55,6 @@ set-x-clipboard() {
     print -rn -- "$1" | eval "$clipcopy"
 }
 
-# redefine the copying widgets so that they update the clipboard.
-for w in copy-region-as-kill vi-delete vi-yank vi-change vi-change-whole-line vi-change-eol; do
-  eval $w'() {
-    #if [[ $_clipcopy == "+" ]];then
-    zle .'$w'
-    set-x-clipboard $CUTBUFFER
-    unset _clipcopy
-    #else
-    #    zle .'$w'
-    #fi
-  }
-  zle -N '$w
-done
-
 vi-set-buffer() {
   read -k keys
   if [[ $keys == '+' ]];then
@@ -79,6 +65,62 @@ vi-set-buffer() {
   fi
 }
 zle -N vi-set-buffer
+
+# mode settings
+hooks-define-hook vim_mode_change
+
+VIM_MODE="i"
+vi-mode-run-hooks() {
+  case $KEYMAP in
+    main|viins)
+      ZSH_VIM_MODE="i"
+      ;;
+    vicmd)
+      case $REGION_ACTIVE in
+        0)
+          ZSH_VIM_MODE="n"
+          ;;
+        1)
+          ZSH_VIM_MODE="v"
+          ;;
+        2)
+          ZSH_VIM_MODE="V"
+          ;;
+      esac
+      ;;
+    virep)
+      ZSH_VIM_MODE="r"
+      ;;
+  esac
+  hooks-run-hook vim_mode_change ZSH_VIM_MODE
+}
+
+add-vi-mode-hook() {
+  hooks-add-hook vim_mode_change $1
+}
+
+add-zle-hook zle-line-init vi-mode-run-hooks
+add-zle-hook zle-line-finish vi-mode-run-hooks
+add-zle-hook zle-keymap-select vi-mode-run-hooks
+
+visual-mode() {
+  zle .visual-mode
+  vi-mode-run-hooks
+}
+zle -N visual-mode
+
+visual-line-mode() {
+  zle .visual-line-mode
+  vi-mode-run-hooks
+}
+zle -N visual-line-mode
+
+overwrite-mode() {
+  zle -K virep
+  zle .overwrite-mode
+  vi-mode-run-hooks
+}
+zle -N overwrite-mode
 
 vi-put-after() {
   if [[ $_clipcopy == '+' ]];then
@@ -91,7 +133,8 @@ vi-put-after() {
   else
     zle .vi-put-after
   fi
-  REGION_ACTIVE=0
+  zle .deactivate-region
+  vi-mode-run-hooks
 }
 zle -N vi-put-after
 
@@ -106,27 +149,30 @@ vi-put-before() {
   else
     zle .vi-put-before
   fi
-  REGION_ACTIVE=0
+  zle .deactivate-region
+  vi-mode-run-hooks
 }
 zle -N vi-put-before
 
-visual-mode() {
-  zle .visual-mode
-  zle zle-keymap-select
-}
-zle -N visual-mode
+# redefine the copying widgets so that they update the clipboard.
+for w in copy-region-as-kill vi-delete vi-yank vi-change vi-change-whole-line vi-change-eol; do
+  eval $w'() {
+    zle .'$w'
+    if [[ $_clipcopy == "+" ]];then
+      set-x-clipboard $CUTBUFFER
+      unset _clipcopy
+    fi
+    vi-mode-run-hooks
+  }
+  zle -N '$w
+done
 
-visual-line-mode() {
-  zle .visual-line-mode
-  zle zle-keymap-select
+vi-visual-exit() {
+  zle .deactivate-region
+  zle .vi-cmd-mode
+  vi-mode-run-hooks
 }
-zle -N visual-line-mode
-
-overwrite-mode() {
-  zle -K virep
-  zle .overwrite-mode
-}
-zle -N overwrite-mode
+zle -N vi-visual-exit
 
 typeset -A key
 
@@ -184,7 +230,8 @@ bindkey -N virep viins
 bindkey -M vicmd "R" overwrite-mode
 
 # visual mode
-[[ -n "${key[Delete]}" ]] && bindkey -M visual "${key[Delete]}" kill-region
+[[ -n "${key[Delete]}" ]] && bindkey -M visual "${key[Delete]}" vi-delete
+bindkey -M visual "^[" vi-visual-exit
 
 # replace mode
 [[ -n "${key[Insert]}" ]] && bindkey -M virep "${key[Insert]}" vi-insert
