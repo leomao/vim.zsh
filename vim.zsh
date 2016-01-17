@@ -118,7 +118,6 @@ zle -N visual-line-mode
 overwrite-mode() {
   zle -K virep
   zle .overwrite-mode
-  vi-mode-run-hooks
 }
 zle -N overwrite-mode
 
