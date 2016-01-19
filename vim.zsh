@@ -161,7 +161,6 @@ for w in copy-region-as-kill vi-delete vi-yank vi-change vi-change-whole-line vi
       set-x-clipboard $CUTBUFFER
       unset _clipcopy
     fi
-    vi-mode-run-hooks
   }
   zle -N '$w
 done
@@ -199,6 +198,14 @@ if [[ -n "${key[Delete]}" ]]; then
   bindkey -M viins "${key[Delete]}" delete-char
   bindkey -M vicmd "${key[Delete]}" delete-char
 fi
+if [[ -n "${key[Up]}" ]]; then
+  bindkey -M viins "${key[Up]}" up-line-or-search
+  bindkey -M vicmd "${key[Up]}" up-line-or-search
+fi
+if [[ -n "${key[Down]}" ]]; then
+  bindkey -M viins "${key[Down]}" down-line-or-search
+  bindkey -M vicmd "${key[Down]}" down-line-or-search
+fi
 if [[ -n "${key[PageUp]}" ]]; then
   bindkey -M viins "${key[PageUp]}" beginning-of-buffer-or-history
   bindkey -M vicmd "${key[PageUp]}" beginning-of-buffer-or-history
@@ -218,15 +225,21 @@ dir-backward-delete-word() {
   zle backward-delete-word
 }
 zle -N dir-backward-delete-word
-bindkey -M viins "^W" dir-backward-delete-word
-bindkey -M viins "^H" backward-delete-char
-bindkey -M viins "^U" backward-kill-line 
+bindkey -M viins "^w" dir-backward-delete-word
+bindkey -M viins "^h" backward-delete-char
+bindkey -M viins "^u" backward-kill-line
 bindkey -M viins "^?" backward-delete-char
 
+bindkey -M viins "^p" up-line-or-search
+bindkey -M viins "^n" down-line-or-search
+
+# create replace keymap
 bindkey -N virep viins
 
 # normal mode
 bindkey -M vicmd "R" overwrite-mode
+bindkey -M vicmd "^p" up-line-or-search
+bindkey -M vicmd "^n" down-line-or-search
 
 # visual mode
 [[ -n "${key[Delete]}" ]] && bindkey -M visual "${key[Delete]}" vi-delete
@@ -234,6 +247,18 @@ bindkey -M visual "^[" vi-visual-exit
 
 # replace mode
 [[ -n "${key[Insert]}" ]] && bindkey -M virep "${key[Insert]}" vi-insert
+
+# menu select mode
+zmodload zsh/complist
+bindkey -M menuselect '^[' vi-cmd-mode
+bindkey -M menuselect '^p' reverse-menu-complete
+bindkey -M menuselect '^n' menu-complete
+
+# additional esc key binding
+bindkey -M viins "^e" vi-cmd-mode
+bindkey -M virep "^e" vi-cmd-mode
+bindkey -M visual "^e" vi-visual-exit
+bindkey -M menuselect "^e" vi-cmd-mode
 
 # Finally, make sure the terminal is in application mode, when zle is
 # active. Only then are the values from $terminfo valid.
