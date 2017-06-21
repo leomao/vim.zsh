@@ -65,7 +65,7 @@ zle -N vi-set-buffer
 # mode settings
 hooks-define-hook vim_mode_change
 
-VIM_MODE="i"
+ZSH_VIM_MODE="i"
 vi-mode-run-hooks() {
   case $KEYMAP in
     main|viins)
@@ -153,6 +153,7 @@ zle -N vi-put-before
 for w in copy-region-as-kill vi-delete vi-yank vi-change vi-change-whole-line vi-change-eol; do
   eval $w'() {
     zle .'$w'
+    vi-mode-run-hooks
     if [[ $_clipcopy == "+" ]];then
       set-x-clipboard $CUTBUFFER
       unset _clipcopy
