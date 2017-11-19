@@ -21,7 +21,9 @@
 # to add other keys to this hash, see: man 5 terminfo
 
 get-x-clipboard() {
-  if which xclip >/dev/null 2>&1; then
+  if which xsel >/dev/null 2>&1; then
+    clippaste='xsel --clipboard --output'
+  elif which xclip >/dev/null 2>&1; then
     clippaste='xclip -selection clipboard -out'
   elif which pbpaste >/dev/null 2>&1; then
     clippaste='pbpaste'
@@ -39,7 +41,9 @@ get-x-clipboard() {
 }
 
 set-x-clipboard() {
-  if which xclip >/dev/null 2>&1; then
+  if which xsel >/dev/null 2>&1; then
+    clipcopy='xsel --clipboard --input'
+  elif which xclip >/dev/null 2>&1; then
     clipcopy='xclip -selection clipboard -in'
   elif which pbcopy >/dev/null 2>&1; then
     clipcopy='pbcopy'
@@ -67,37 +71,50 @@ hooks-define-hook vim_mode_change
 
 ZSH_VIM_MODE="i"
 vi-mode-run-hooks() {
+  local zsh_vim_mode
   case $KEYMAP in
     main|viins)
-      ZSH_VIM_MODE="i"
+      zsh_vim_mode="i"
       ;;
     vicmd)
       case $REGION_ACTIVE in
         0)
-          ZSH_VIM_MODE="n"
+          zsh_vim_mode="n"
           ;;
         1)
-          ZSH_VIM_MODE="v"
+          zsh_vim_mode="v"
           ;;
         2)
-          ZSH_VIM_MODE="V"
+          zsh_vim_mode="v"
           ;;
       esac
       ;;
     virep)
-      ZSH_VIM_MODE="r"
+      zsh_vim_mode="r"
       ;;
   esac
-  hooks-run-hook vim_mode_change ZSH_VIM_MODE
+  hooks-run-hook vim_mode_change $zsh_vim_mode $1
+}
+
+vi-mode-line-init() {
+  vi-mode-run-hooks 'line-init'
+}
+
+vi-mode-line-finish() {
+  vi-mode-run-hooks 'line-finish'
+}
+
+vi-mode-keymap-select() {
+  vi-mode-run-hooks 'keymap-select'
 }
 
 add-vi-mode-hook() {
   hooks-add-hook vim_mode_change $1
 }
 
-add-zle-hook zle-line-init vi-mode-run-hooks
-add-zle-hook zle-line-finish vi-mode-run-hooks
-add-zle-hook zle-keymap-select vi-mode-run-hooks
+add-zle-hook zle-line-init vi-mode-line-init
+add-zle-hook zle-line-finish vi-mode-line-finish
+add-zle-hook zle-keymap-select vi-mode-keymap-select
 
 visual-mode() {
   zle .visual-mode
