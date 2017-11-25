@@ -118,13 +118,13 @@ add-zle-hook zle-keymap-select vi-mode-keymap-select
 
 visual-mode() {
   zle .visual-mode
-  vi-mode-run-hooks
+  vi-mode-run-hooks 'keymap-select'
 }
 zle -N visual-mode
 
 visual-line-mode() {
   zle .visual-line-mode
-  vi-mode-run-hooks
+  vi-mode-run-hooks 'keymap-select'
 }
 zle -N visual-line-mode
 
@@ -146,7 +146,7 @@ vi-put-after() {
     zle .vi-put-after
   fi
   zle .deactivate-region
-  vi-mode-run-hooks
+  vi-mode-run-hooks 'keymap-select'
 }
 zle -N vi-put-after
 
@@ -162,7 +162,7 @@ vi-put-before() {
     zle .vi-put-before
   fi
   zle .deactivate-region
-  vi-mode-run-hooks
+  vi-mode-run-hooks 'keymap-select'
 }
 zle -N vi-put-before
 
@@ -170,7 +170,7 @@ zle -N vi-put-before
 for w in copy-region-as-kill vi-delete vi-yank vi-change vi-change-whole-line vi-change-eol; do
   eval $w'() {
     zle .'$w'
-    vi-mode-run-hooks
+    vi-mode-run-hooks keymap-select
     if [[ $_clipcopy == "+" ]];then
       set-x-clipboard $CUTBUFFER
       unset _clipcopy
@@ -182,7 +182,7 @@ done
 vi-visual-exit() {
   zle .deactivate-region
   zle .vi-cmd-mode
-  vi-mode-run-hooks
+  vi-mode-run-hooks 'keymap-select'
 }
 zle -N vi-visual-exit
 
@@ -246,6 +246,17 @@ bindkey -M viins "^?" backward-delete-char
 
 bindkey -M viins "^p" up-line-or-search
 bindkey -M viins "^n" down-line-or-search
+
+# A temporary fix
+# prevent vi-mode-run-hooks run multiple times in one execution cycle
+# see https://github.com/sindresorhus/pure/commit/a3b22b242d2e4bc8d7e989c47e49a4bf03d7e2ab
+bindkey -M viins "^[o" vi-open-line-below
+bindkey -M viins "^[O" vi-open-line-above
+bindkey -M viins "^[i" vi-insert
+bindkey -M viins "^[I" vi-insert-bol
+bindkey -M viins "^[a" vi-add-next
+bindkey -M viins "^[A" vi-add-eol
+bindkey -M viins "^[R" overwrite-mode
 
 # create replace keymap
 bindkey -N virep viins
