@@ -51,9 +51,17 @@ set-x-clipboard() {
     return 1
   fi
 
-  (( ! $+DISPLAY )) ||
-    print -rn -- "$1" | eval "$clipcopy"
+  (( ! $+DISPLAY )) || print -rn -- "$1" | eval "$clipcopy"
 }
+
+execute_keymap_select_hooks() {
+  local arr=($(add-zle-hook-widget -L zle-keymap-select))
+  hook_arr=${arr[4,-1]}
+  for h in ${hook_arr[@]}; do
+    zle ${h#*:}
+  done
+}
+zle -N execute_keymap_select_hooks
 
 vi-set-buffer() {
   read -k keys
@@ -66,65 +74,16 @@ vi-set-buffer() {
 }
 zle -N vi-set-buffer
 
-# mode settings
-hooks-define-hook vim_mode_change
-
-ZSH_VIM_MODE="i"
-vi-mode-run-hooks() {
-  local zsh_vim_mode
-  case $KEYMAP in
-    main|viins)
-      zsh_vim_mode="i"
-      ;;
-    vicmd)
-      case $REGION_ACTIVE in
-        0)
-          zsh_vim_mode="n"
-          ;;
-        1)
-          zsh_vim_mode="v"
-          ;;
-        2)
-          zsh_vim_mode="v"
-          ;;
-      esac
-      ;;
-    virep)
-      zsh_vim_mode="r"
-      ;;
-  esac
-  hooks-run-hook vim_mode_change $zsh_vim_mode $1
-}
-
-vi-mode-line-init() {
-  vi-mode-run-hooks 'line-init'
-}
-
-vi-mode-line-finish() {
-  vi-mode-run-hooks 'line-finish'
-}
-
-vi-mode-keymap-select() {
-  vi-mode-run-hooks 'keymap-select'
-}
-
-add-vi-mode-hook() {
-  hooks-add-hook vim_mode_change $1
-}
-
-add-zle-hook zle-line-init vi-mode-line-init
-add-zle-hook zle-line-finish vi-mode-line-finish
-add-zle-hook zle-keymap-select vi-mode-keymap-select
-
+#mode settings
 visual-mode() {
   zle .visual-mode
-  vi-mode-run-hooks 'keymap-select'
+  zle execute_keymap_select_hooks
 }
 zle -N visual-mode
 
 visual-line-mode() {
   zle .visual-line-mode
-  vi-mode-run-hooks 'keymap-select'
+  zle execute_keymap_select_hooks
 }
 zle -N visual-line-mode
 
@@ -146,7 +105,7 @@ vi-put-after() {
     zle .vi-put-after
   fi
   zle .deactivate-region
-  vi-mode-run-hooks 'keymap-select'
+  zle execute_keymap_select_hooks
 }
 zle -N vi-put-after
 
@@ -162,7 +121,7 @@ vi-put-before() {
     zle .vi-put-before
   fi
   zle .deactivate-region
-  vi-mode-run-hooks 'keymap-select'
+  zle execute_keymap_select_hooks
 }
 zle -N vi-put-before
 
@@ -170,7 +129,7 @@ zle -N vi-put-before
 for w in copy-region-as-kill vi-delete vi-yank vi-change vi-change-whole-line vi-change-eol; do
   eval $w'() {
     zle .'$w'
-    vi-mode-run-hooks keymap-select
+    zle execute_keymap_select_hooks
     if [[ $_clipcopy == "+" ]];then
       set-x-clipboard $CUTBUFFER
       unset _clipcopy
@@ -182,7 +141,6 @@ done
 vi-visual-exit() {
   zle .deactivate-region
   zle .vi-cmd-mode
-  vi-mode-run-hooks 'keymap-select'
 }
 zle -N vi-visual-exit
 
@@ -248,7 +206,7 @@ bindkey -M viins "^p" up-line-or-search
 bindkey -M viins "^n" down-line-or-search
 
 # A temporary fix
-# prevent vi-mode-run-hooks run multiple times in one execution cycle
+# prevent hooks run multiple times in one execution cycle
 # see https://github.com/sindresorhus/pure/commit/a3b22b242d2e4bc8d7e989c47e49a4bf03d7e2ab
 bindkey -M viins "^[o" vi-open-line-below
 bindkey -M viins "^[O" vi-open-line-above
@@ -288,14 +246,15 @@ bindkey -M menuselect "^e" vi-cmd-mode
 # Finally, make sure the terminal is in application mode, when zle is
 # active. Only then are the values from $terminfo valid.
 if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} )); then
+  autoload -Uz +X add-zle-hook-widget
   zle-keybinds-init() {
     echoti smkx
   }
   zle-keybinds-finish() {
     echoti rmkx
   }
-  add-zle-hook zle-line-init zle-keybinds-init
-  add-zle-hook zle-line-finish zle-keybinds-finish
+  add-zle-hook-widget zle-line-init zle-keybinds-init
+  add-zle-hook-widget zle-line-finish zle-keybinds-finish
 fi
 
 bindkey -v
