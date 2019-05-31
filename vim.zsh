@@ -126,10 +126,21 @@ vi-put-before() {
 zle -N vi-put-before
 
 # redefine the copying widgets so that they update the clipboard.
-for w in copy-region-as-kill vi-delete vi-yank vi-change vi-change-whole-line vi-change-eol; do
+for w in copy-region-as-kill vi-delete vi-yank; do
   eval $w'() {
     zle .'$w'
     zle execute_keymap_select_hooks
+    if [[ $_clipcopy == "+" ]];then
+      set-x-clipboard $CUTBUFFER
+      unset _clipcopy
+    fi
+  }
+  zle -N '$w
+done
+
+for w in vi-change vi-change-whole-line vi-change-eol; do
+  eval $w'() {
+    zle .'$w'
     if [[ $_clipcopy == "+" ]];then
       set-x-clipboard $CUTBUFFER
       unset _clipcopy
