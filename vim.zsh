@@ -152,6 +152,7 @@ done
 vi-visual-exit() {
   zle .deactivate-region
   zle .vi-cmd-mode
+  zle execute_keymap_select_hooks
 }
 zle -N vi-visual-exit
 
