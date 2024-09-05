@@ -20,8 +20,10 @@
 # create a zkbd compatible hash;
 # to add other keys to this hash, see: man 5 terminfo
 
-get-x-clipboard() {
-  if which xsel >/dev/null 2>&1; then
+get-clipboard() {
+  if which wl-paste > /dev/null 2>&1; then
+    clippaste='wl-paste --no-newline'
+  elif which xsel >/dev/null 2>&1; then
     clippaste='xsel --clipboard --output'
   elif which xclip >/dev/null 2>&1; then
     clippaste='xclip -selection clipboard -out'
@@ -40,8 +42,10 @@ get-x-clipboard() {
   fi
 }
 
-set-x-clipboard() {
-  if which xsel >/dev/null 2>&1; then
+set-clipboard() {
+  if which wl-copy >/dev/null 2>&1; then
+    clipcopy='wl-copy'
+  elif which xsel >/dev/null 2>&1; then
     clipcopy='xsel --clipboard --input'
   elif which xclip >/dev/null 2>&1; then
     clipcopy='xclip -selection clipboard -in'
@@ -97,7 +101,7 @@ vi-put-after() {
   if [[ $_clipcopy == '+' ]];then
     local cbuf
     cbuf=$CUTBUFFER
-    get-x-clipboard
+    get-clipboard
     zle .vi-put-after
     unset _clipcopy
     CUTBUFFER=$cbuf
@@ -113,7 +117,7 @@ vi-put-before() {
   if [[ $_clipcopy == '+' ]];then
     local cbuf
     cbuf=$CUTBUFFER
-    get-x-clipboard
+    get-clipboard
     zle .vi-put-before
     unset _clipcopy
     CUTBUFFER=$cbuf
@@ -131,7 +135,7 @@ for w in copy-region-as-kill vi-delete vi-yank; do
     zle .'$w'
     zle execute_keymap_select_hooks
     if [[ $_clipcopy == "+" ]];then
-      set-x-clipboard $CUTBUFFER
+      set-clipboard $CUTBUFFER
       unset _clipcopy
     fi
   }
@@ -142,7 +146,7 @@ for w in vi-change vi-change-whole-line vi-change-eol; do
   eval $w'() {
     zle .'$w'
     if [[ $_clipcopy == "+" ]];then
-      set-x-clipboard $CUTBUFFER
+      set-clipboard $CUTBUFFER
       unset _clipcopy
     fi
   }
