@@ -216,4 +216,18 @@ bindkey -M virep "^e" vi-cmd-mode
 bindkey -M visual "^e" vi-visual-exit
 bindkey -M menuselect "^e" vi-cmd-mode
 
+# Finally, make sure the terminal is in application mode, when zle is
+# active. Only then are the values from $terminfo valid.
+if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} )); then
+  autoload -Uz +X add-zle-hook-widget
+  zle-keybinds-init() {
+    echoti smkx
+  }
+  zle-keybinds-finish() {
+    echoti rmkx
+  }
+  add-zle-hook-widget zle-line-init zle-keybinds-init
+  add-zle-hook-widget zle-line-finish zle-keybinds-finish
+fi
+
 bindkey -v
