@@ -1,8 +1,4 @@
-# Setting up all vim mode mapping and special keys
-#
-# create a zkbd compatible hash;
-# to add other keys to this hash, see: man 5 terminfo
-
+# Clipboard support
 get-clipboard() {
   if which wl-paste > /dev/null 2>&1; then
     clippaste='wl-paste --no-newline'
@@ -41,15 +37,6 @@ set-clipboard() {
   (( ! $+DISPLAY )) || print -rn -- "$1" | eval "$clipcopy"
 }
 
-execute_keymap_select_hooks() {
-  local arr=($(add-zle-hook-widget -L zle-keymap-select))
-  hook_arr=${arr[4,-1]}
-  for h in ${hook_arr[@]}; do
-    zle ${h#*:}
-  done
-}
-zle -N execute_keymap_select_hooks
-
 vi-set-buffer() {
   read -k keys
   if [[ $keys == '+' ]];then
@@ -60,25 +47,6 @@ vi-set-buffer() {
   fi
 }
 zle -N vi-set-buffer
-
-#mode settings
-visual-mode() {
-  zle .visual-mode
-  zle execute_keymap_select_hooks
-}
-zle -N visual-mode
-
-visual-line-mode() {
-  zle .visual-line-mode
-  zle execute_keymap_select_hooks
-}
-zle -N visual-line-mode
-
-overwrite-mode() {
-  zle -K virep
-  zle .overwrite-mode
-}
-zle -N overwrite-mode
 
 vi-put-after() {
   if [[ $_clipcopy == '+' ]];then
@@ -92,7 +60,6 @@ vi-put-after() {
     zle .vi-put-after
   fi
   zle .deactivate-region
-  zle execute_keymap_select_hooks
 }
 zle -N vi-put-after
 
@@ -108,7 +75,6 @@ vi-put-before() {
     zle .vi-put-before
   fi
   zle .deactivate-region
-  zle execute_keymap_select_hooks
 }
 zle -N vi-put-before
 
@@ -116,7 +82,6 @@ zle -N vi-put-before
 for w in copy-region-as-kill vi-delete vi-yank; do
   eval $w'() {
     zle .'$w'
-    zle execute_keymap_select_hooks
     if [[ $_clipcopy == "+" ]];then
       set-clipboard $CUTBUFFER
       unset _clipcopy
@@ -136,12 +101,23 @@ for w in vi-change vi-change-whole-line vi-change-eol; do
   zle -N '$w
 done
 
+#mode settings
+overwrite-mode() {
+  zle -K virep
+  zle .overwrite-mode
+}
+zle -N overwrite-mode
+
 vi-visual-exit() {
   zle .deactivate-region
   zle .vi-cmd-mode
-  zle execute_keymap_select_hooks
 }
 zle -N vi-visual-exit
+
+# Setting up all vim mode mapping and special keys
+#
+# create a zkbd compatible hash;
+# to add other keys to this hash, see: man 5 terminfo
 
 typeset -A key
 
@@ -204,9 +180,7 @@ bindkey -M viins "^?" backward-delete-char
 bindkey -M viins "^p" up-line-or-search
 bindkey -M viins "^n" down-line-or-search
 
-# A temporary fix
-# prevent hooks run multiple times in one execution cycle
-# see https://github.com/sindresorhus/pure/commit/a3b22b242d2e4bc8d7e989c47e49a4bf03d7e2ab
+# prevent it from switching to normal mode and back to insert mode.
 bindkey -M viins "^[o" vi-open-line-below
 bindkey -M viins "^[O" vi-open-line-above
 bindkey -M viins "^[i" vi-insert
@@ -241,19 +215,5 @@ bindkey -M viins "^e" vi-cmd-mode
 bindkey -M virep "^e" vi-cmd-mode
 bindkey -M visual "^e" vi-visual-exit
 bindkey -M menuselect "^e" vi-cmd-mode
-
-# Finally, make sure the terminal is in application mode, when zle is
-# active. Only then are the values from $terminfo valid.
-if (( ${+terminfo[smkx]} )) && (( ${+terminfo[rmkx]} )); then
-  autoload -Uz +X add-zle-hook-widget
-  zle-keybinds-init() {
-    echoti smkx
-  }
-  zle-keybinds-finish() {
-    echoti rmkx
-  }
-  add-zle-hook-widget zle-line-init zle-keybinds-init
-  add-zle-hook-widget zle-line-finish zle-keybinds-finish
-fi
 
 bindkey -v
